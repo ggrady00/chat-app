@@ -2,8 +2,15 @@ const app = require("./src/app")
 const dotenv = require("dotenv")
 const {connectDB} = require("./src/lib/db")
 
-dotenv.config({path: ".env.development"})
+
+const ENV = process.env.NODE_ENV || "development"
+
+require("dotenv").config({
+    path: `.env.${ENV}`
+})
+
 const PORT = process.env.PORT
+
 
 
 app.listen(PORT, () => {
