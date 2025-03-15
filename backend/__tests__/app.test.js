@@ -104,4 +104,86 @@ describe("authentication", ()=>{
             })
         })
     })
+    describe("POST /login", ()=>{
+        test("201: should login with valid credentials", ()=>{
+            const login = {
+                email: "johnsmith@test.com",
+                password: "password123"
+            }
+            return request(app)
+            .post("/api/auth/login")
+            .send(login)
+            .expect(201)
+            .then(res => {
+                expect(res.headers["set-cookie"]).toBeDefined()
+                const cookie = res.headers["set-cookie"].find(cookie => cookie.startsWith("jwt="))
+                expect(cookie).toBeDefined()
+            })
+        })
+        test("400: should give correct error with given invalid email", ()=>{
+            const login = {email: "incorrect@email.com", password: "test"}
+            return request(app)
+            .post("/api/auth/login")
+            .send(login)
+            .expect(400)
+            .then(({body}) => {
+                expect(body.msg).toBe("Invalid Credentials")
+            })
+        })
+        test("400: should give correct error with given invalid email", ()=>{
+            const login = {email: "johnsmith@test.com", password: "test"}
+            return request(app)
+            .post("/api/auth/login")
+            .send(login)
+            .expect(400)
+            .then(({body}) => {
+                expect(body.msg).toBe("Invalid Credentials")
+            })
+        })
+        test("400: should give correct error with given missing email", ()=>{
+            const login = {password: "test"}
+            return request(app)
+            .post("/api/auth/login")
+            .send(login)
+            .expect(400)
+            .then(({body}) => {
+                expect(body.msg).toBe("Bad Request")
+            })
+        })
+        test("400: should give correct error with given missing password", ()=>{
+            const login = {email: "johnsmith@test.com"}
+            return request(app)
+            .post("/api/auth/login")
+            .send(login)
+            .expect(400)
+            .then(({body}) => {
+                expect(body.msg).toBe("Bad Request")
+            })
+        })
+    })
+    describe("POST /logout", ()=>{
+        test("200: logs out", async ()=>{
+            const agent = request.agent(app)
+            const login = {
+                email: "johnsmith@test.com",
+                password: "password123"
+            }
+            const loginRes = await agent
+            .post("/api/auth/login")
+            .send(login)
+            .expect(201)
+
+
+            expect(loginRes.headers["set-cookie"]).toBeDefined();
+
+            const logoutRes = await agent
+            .post("/api/auth/logout")
+            .expect(200)
+            expect(logoutRes.headers["set-cookie"]).toBeDefined();
+
+        })
+    })
+    describe("Token Middleware", ()=> {
+        
+    })
 })

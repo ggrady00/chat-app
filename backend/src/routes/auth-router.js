@@ -1,4 +1,4 @@
-const { postNewUser, postLogIn, postLogOut } = require("../controllers/auth-controllers")
+const { postNewUser, postLogIn, postLogOut, getProfile } = require("../controllers/auth-controllers")
 
 const authRouter = require("express").Router()
 
@@ -13,5 +13,9 @@ authRouter
 authRouter
 .route("/logout")
 .post(postLogOut)
+
+authRouter
+.route("/profile")
+.get(getProfile)
 
 module.exports = authRouter

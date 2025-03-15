@@ -2,6 +2,7 @@ const User = require("../models/auth-models");
 const { isValidEmail, generateToken } = require("../utils");
 const bcrypt = require("bcryptjs");
 
+
 exports.postNewUser = async (req, res, next) => {
   const { fullName, email, password } = req.body;
   if (!fullName || !email || !password) {
@@ -40,6 +41,39 @@ exports.postNewUser = async (req, res, next) => {
   }
 };
 
-exports.postLogIn = (req, res) => {};
+exports.postLogIn = async (req, res, next) => {
+  const {email, password} = req.body
+  if(!email || !password) res.status(400).send({msg:"Bad Request"})
+  
+  try {
+    const user = await User.findOne({email})
+    if(!user) res.status(400).send({msg: "Invalid Credentials"})
+    const pwMatch = await bcrypt.compare(password, user.password)
+    if(!pwMatch) res.status(400).send({msg:"Invalid Credentials"}) 
+    
+    generateToken(user._id, res)
+    res.status(201).send({user : {
+      _id: user._id,
+      fullName: user.fullName,
+      email,
+      profilePic: user.profilePic,
+      
+    }})
 
-exports.postLogOut = (req, res) => {};
+  } catch (error) {
+    next(error)
+  }
+};
+
+exports.postLogOut = (req, res, next) => {
+  try {
+    res.cookie("jwt", "", {maxAge:0})
+    res.status(200).send({msg: "Logged out"})
+  } catch (error) {
+    next(error)
+  }
+};
+
+exports.getProfile = (req, res, next) => {
+  console.log(req)
+}
