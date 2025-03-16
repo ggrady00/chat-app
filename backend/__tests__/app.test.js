@@ -2,6 +2,17 @@ const app = require("../src/app");
 const request = require("supertest");
 const ENV = process.env.NODE_ENV;
 const jwt = require("jsonwebtoken");
+jest.mock("cloudinary", () => ({
+    v2: {
+        config: jest.fn(),
+        uploader: {
+            upload: jest.fn(() => 
+                Promise.resolve({ secure_url: "http://mock-cloudinary.com/image.jpg" })
+            ),
+        },
+    },
+}));
+
 
 require("dotenv").config({
   path: `.env.${ENV}`,
@@ -250,4 +261,50 @@ describe("authentication", () => {
       });
     });
   });
+  describe("PUT /profile", ()=>{
+    let cookie;
+    const login = {
+      email: "johnsmith@test.com",
+      password: "password123",
+    };
+    beforeAll(() => {
+      return request(app)
+        .post("/api/auth/login")
+        .send(login)
+        .then((res) => {
+          cookie = res.headers["set-cookie"].find((cookie) =>
+            cookie.startsWith("jwt=")
+          );
+        });
+    })
+    
+    test("200: responds with updated profile", ()=>{
+        return request(app)
+        .patch("/api/auth/profile")
+        .set("Cookie", cookie)
+        .send({ profilePic: "base64encodedimage" })
+        .expect(200)
+        .then(({body: updatedUser}) => {
+            expect(updatedUser.profilePic).toBe("http://mock-cloudinary.com/image.jpg")
+        })
+    })
+    test("400: responds with correct error when missing body", ()=>{
+        return request(app)
+        .patch("/api/auth/profile")
+        .set("Cookie", cookie)
+        .expect(400)
+        .then(({body}) => {
+            expect(body.msg).toBe("Bad Request")
+        })
+    })
+    test("401: endpoint needs authentication", ()=>{
+        return request(app)
+        .patch("/api/auth/profile")
+        .send({ profilePic: "base64encodedimage" })
+        .expect(401)
+        .then(({body}) => {
+            expect(body.msg).toBe("Missing Token")
+        })
+    })
+  })
 });

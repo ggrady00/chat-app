@@ -1,6 +1,7 @@
 const User = require("../models/auth-models");
 const { isValidEmail, generateToken } = require("../utils");
 const bcrypt = require("bcryptjs");
+const cloudinary = require("../lib/cloudinary")
 
 
 exports.postNewUser = async (req, res, next) => {
@@ -77,14 +78,30 @@ exports.postLogOut = (req, res, next) => {
 exports.getProfile = async (req, res, next) => {
 
   try {
-    const profile = await User.findById(req.userId)
+    const profile = await User.findById(req.userId).select("-password")
     res.status(200).send({profile: {
       email: profile.email,
       fullName: profile.fullName,
       profilePic: profile.profilePic
     }})
   } catch (error) {
-    
+    next(error)
   }
 
+}
+
+exports.updateProfile = async (req, res, next) => {
+  console.log("controller")
+  const {profilePic} = req.body
+  const userId = req.userId
+  if(!profilePic) return res.status(400).send({msg: "Bad Request"})
+  try {
+    const upload = await cloudinary.uploader.upload(profilePic)
+    const updatedUser = await User.findByIdAndUpdate(userId, {profilePic:upload.secure_url}, {new:true})
+    res.status(200).send(updatedUser)
+
+  } catch (error) {
+    console.log(error)
+    next(error)
+  }
 }
