@@ -74,6 +74,17 @@ exports.postLogOut = (req, res, next) => {
   }
 };
 
-exports.getProfile = (req, res, next) => {
-  console.log(req)
+exports.getProfile = async (req, res, next) => {
+
+  try {
+    const profile = await User.findById(req.userId)
+    res.status(200).send({profile: {
+      email: profile.email,
+      fullName: profile.fullName,
+      profilePic: profile.profilePic
+    }})
+  } catch (error) {
+    
+  }
+
 }
