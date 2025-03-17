@@ -15,11 +15,19 @@ exports.getUsersForSidebar = async (req, res, next) => {
 }
 
 exports.getMessagesByUserId = async (req, res, next) => {
-    const loggedInUser = req.userId
+    const myId = req.userId
+    const chatterId = req.params.id
+    if(!mongoose.Types.ObjectId.isValid(chatterId)) return res.status(400).send({msg: "Invalid Id"})
     try {
-        
+        const messages = await Message.find({
+            $or: [
+                {senderId:myId, receiverId:chatterId},
+                {senderId: chatterId, receiverId: myId}
+            ]
+        })
+        res.status(200).send({messages})
     } catch (error) {
-        
+        next(error)
     }
 }
 

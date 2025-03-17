@@ -20,6 +20,7 @@ require("dotenv").config({
 
 const mongoose = require("mongoose");
 const { MongoMemoryServer } = require("mongodb-memory-server");
+const Message = require("../src/models/message-model");
 
 beforeAll(async () => {
   server = await MongoMemoryServer.create();
@@ -47,7 +48,7 @@ afterAll(async () => {
   await mongoose.connection.close();
   await server.stop();
 });
-
+let johnSmithId;
 describe("authentication", () => {
   describe("POST /register", () => {
     test("201: should register a new user", () => {
@@ -67,6 +68,7 @@ describe("authentication", () => {
           );
           expect(cookie).toBeDefined();
           expect(res.body.user).toHaveProperty("_id");
+          johnSmithId = res.body.user._id
           expect(res.body.user).toHaveProperty("profilePic");
           expect(res.body.user.fullName).toBe("John Smith");
           expect(res.body.user.email).toBe("johnsmith@test.com");
@@ -338,6 +340,15 @@ describe("messages", () => {
         );
       });
   });
+  let receiverId;
+    beforeAll(()=>{
+      return request(app)
+      .get("/api/message/users")
+      .set("Cookie", cookie)
+      .then(({body:{users}}) => {
+        receiverId = users[0]._id
+      })
+    })
   describe("GET /users", () => {
     test("200: should return all users", () => {
       return request(app)
@@ -359,15 +370,6 @@ describe("messages", () => {
     });
   });
   describe("POST /:id/", ()=>{
-    let receiverId;
-    beforeAll(()=>{
-      return request(app)
-      .get("/api/message/users")
-      .set("Cookie", cookie)
-      .then(({body:{users}}) => {
-        receiverId = users[0]._id
-      })
-    })
     test("201 should return message and add to db when sending text", ()=>{
       return request(app)
       .post(`/api/message/${receiverId}`)
@@ -420,5 +422,44 @@ describe("messages", () => {
         });
     });
   })
-  xdescribe("GET /:id", () => {});
+  describe("GET /:id", () => {
+    beforeAll(async()=>{
+      const firstMessage = new Message({
+        senderId: receiverId,
+        receiverId: johnSmithId,
+        text: "Hi!"
+      })
+      await firstMessage.save()
+    })
+    test("200: returns all messages between user and :id", ()=>{
+      return request(app)
+      .get(`/api/message/${receiverId}`)
+      .set("Cookie", cookie)
+      .expect(200)
+      .then(({body:{messages}}) => {
+        expect(messages.length).toBe(3)
+        expect(messages[0].senderId).toBe(johnSmithId)
+        expect(messages[2].senderId).toBe(receiverId)
+      })
+    })
+    test("400: should return error when invalid :id", ()=>{
+      return request(app)
+      .get(`/api/message/123`)
+      .set("Cookie", cookie)
+      .send({text: "Hello"})
+      .expect(400)
+      .then(({body}) => {
+        expect(body.msg).toBe("Invalid Id")
+      })
+    })
+    test("401: responds with error trying to post with invalid/missing/expired token", () => {
+      return request(app)
+        .get(`/api/message/${receiverId}`)
+        .set("Cookie", "jwt=invalidToken")
+        .expect(401)
+        .then(({ body }) => {
+          expect(body.msg).toBe("Invalid Token");
+        });
+    });
+  });
 });

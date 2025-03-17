@@ -1,4 +1,4 @@
-const { getUsersForSidebar, sendMessageByUserId } = require("../controllers/message-contollers")
+const { getUsersForSidebar, sendMessageByUserId, getMessagesByUserId } = require("../controllers/message-contollers")
 const {authenticateToken} = require("../middleware/auth")
 
 
@@ -11,5 +11,6 @@ messageRouter
 messageRouter
 .route("/:id")
 .post(authenticateToken, sendMessageByUserId)
+.get(authenticateToken, getMessagesByUserId)
 
 module.exports = messageRouter
