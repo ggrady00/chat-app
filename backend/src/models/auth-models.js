@@ -27,17 +27,5 @@ const userSchema = new mongoose.Schema(
 
 const User = mongoose.model("User", userSchema)
 
-exports.registerUser = (res, req) => {
-
-}
-
-
-exports.logInUser = (req, res) => {
-    
-}
-
-exports.logOutUser = (req, res) => {
-    
-}
 
 module.exports = User

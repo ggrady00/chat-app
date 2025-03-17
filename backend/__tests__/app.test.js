@@ -1,18 +1,18 @@
 const app = require("../src/app");
+const User = require("../src/models/auth-models");
 const request = require("supertest");
 const ENV = process.env.NODE_ENV;
 const jwt = require("jsonwebtoken");
 jest.mock("cloudinary", () => ({
-    v2: {
-        config: jest.fn(),
-        uploader: {
-            upload: jest.fn(() => 
-                Promise.resolve({ secure_url: "http://mock-cloudinary.com/image.jpg" })
-            ),
-        },
+  v2: {
+    config: jest.fn(),
+    uploader: {
+      upload: jest.fn(() =>
+        Promise.resolve({ secure_url: "http://mock-cloudinary.com/image.jpg" })
+      ),
     },
+  },
 }));
-
 
 require("dotenv").config({
   path: `.env.${ENV}`,
@@ -28,6 +28,18 @@ beforeAll(async () => {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   });
+  const firstUser = new User({
+    fullName: "Brian Jones",
+    email: "brianj@email.com",
+    password: "unsafepw",
+  });
+  const secondUser = new User({
+    fullName: "Kathy Black",
+    email: "blackkt@email.com",
+    password: "testtest",
+  });
+  await firstUser.save();
+  await secondUser.save();
 });
 
 afterAll(async () => {
@@ -261,7 +273,7 @@ describe("authentication", () => {
       });
     });
   });
-  describe("PUT /profile", ()=>{
+  describe("PATCH /profile", () => {
     let cookie;
     const login = {
       email: "johnsmith@test.com",
@@ -276,35 +288,137 @@ describe("authentication", () => {
             cookie.startsWith("jwt=")
           );
         });
-    })
-    
-    test("200: responds with updated profile", ()=>{
-        return request(app)
+    });
+
+    test("200: responds with updated profile", () => {
+      return request(app)
         .patch("/api/auth/profile")
         .set("Cookie", cookie)
         .send({ profilePic: "base64encodedimage" })
         .expect(200)
-        .then(({body: updatedUser}) => {
-            expect(updatedUser.profilePic).toBe("http://mock-cloudinary.com/image.jpg")
-        })
-    })
-    test("400: responds with correct error when missing body", ()=>{
-        return request(app)
+        .then(({ body: updatedUser }) => {
+          expect(updatedUser.profilePic).toBe(
+            "http://mock-cloudinary.com/image.jpg"
+          );
+        });
+    });
+    test("400: responds with correct error when missing body", () => {
+      return request(app)
         .patch("/api/auth/profile")
         .set("Cookie", cookie)
         .expect(400)
-        .then(({body}) => {
-            expect(body.msg).toBe("Bad Request")
-        })
-    })
-    test("401: endpoint needs authentication", ()=>{
-        return request(app)
+        .then(({ body }) => {
+          expect(body.msg).toBe("Bad Request");
+        });
+    });
+    test("401: endpoint needs authentication", () => {
+      return request(app)
         .patch("/api/auth/profile")
         .send({ profilePic: "base64encodedimage" })
         .expect(401)
-        .then(({body}) => {
-            expect(body.msg).toBe("Missing Token")
-        })
+        .then(({ body }) => {
+          expect(body.msg).toBe("Missing Token");
+        });
+    });
+  });
+});
+describe("messages", () => {
+  let cookie;
+  const login = {
+    email: "johnsmith@test.com",
+    password: "password123",
+  };
+  beforeAll(() => {
+    return request(app)
+      .post("/api/auth/login")
+      .send(login)
+      .then((res) => {
+        cookie = res.headers["set-cookie"].find((cookie) =>
+          cookie.startsWith("jwt=")
+        );
+      });
+  });
+  describe("GET /users", () => {
+    test("200: should return all users", () => {
+      return request(app)
+        .get("/api/message/users")
+        .set("Cookie", cookie)
+        .expect(200)
+        .then(({ body: { users } }) => {
+          expect(users.length).toBe(2);
+          expect(users[0].fullName).toBe("Brian Jones");
+        });
+    });
+    test("401: endpoint needs authentication", () => {
+      return request(app)
+        .get("/api/message/users")
+        .expect(401)
+        .then(({ body }) => {
+          expect(body.msg).toBe("Missing Token");
+        });
+    });
+  });
+  describe("POST /:id/", ()=>{
+    let receiverId;
+    beforeAll(()=>{
+      return request(app)
+      .get("/api/message/users")
+      .set("Cookie", cookie)
+      .then(({body:{users}}) => {
+        receiverId = users[0]._id
+      })
     })
+    test("201 should return message and add to db when sending text", ()=>{
+      return request(app)
+      .post(`/api/message/${receiverId}`)
+      .set("Cookie", cookie)
+      .send({text: "Hello"})
+      .expect(201)
+      .then(({body: {message}}) => {
+        expect(message.receiverId).toBe(receiverId)
+        expect(message.text).toBe("Hello")
+      })
+    })
+    test("201 should return message and add to db when sending an image", ()=>{
+      return request(app)
+      .post(`/api/message/${receiverId}`)
+      .set("Cookie", cookie)
+      .send({image: "base64encodedimage"})
+      .expect(201)
+      .then(({body: {message}}) => {
+        expect(message.receiverId).toBe(receiverId)
+        expect(message.image).toBe("http://mock-cloudinary.com/image.jpg")
+      })
+    })
+    test("400: should return error when missing body", ()=>{
+      return request(app)
+      .post(`/api/message/${receiverId}`)
+      .set("Cookie", cookie)
+      .expect(400)
+      .then(({body}) => {
+        expect(body.msg).toBe("Bad Request")
+      })
+    })
+    test("400: should return error when invalid :id", ()=>{
+      return request(app)
+      .post(`/api/message/123`)
+      .set("Cookie", cookie)
+      .send({text: "Hello"})
+      .expect(400)
+      .then(({body}) => {
+        expect(body.msg).toBe("Invalid Id")
+      })
+    })
+    test("401: responds with error trying to post with invalid/missing/expired token", () => {
+      return request(app)
+        .post(`/api/message/${receiverId}`)
+        .set("Cookie", "jwt=invalidToken")
+        .send({ body: "nice!" })
+        .expect(401)
+        .then(({ body }) => {
+          expect(body.msg).toBe("Invalid Token");
+        });
+    });
   })
+  xdescribe("GET /:id", () => {});
 });

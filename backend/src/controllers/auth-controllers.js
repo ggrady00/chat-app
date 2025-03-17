@@ -79,11 +79,7 @@ exports.getProfile = async (req, res, next) => {
 
   try {
     const profile = await User.findById(req.userId).select("-password")
-    res.status(200).send({profile: {
-      email: profile.email,
-      fullName: profile.fullName,
-      profilePic: profile.profilePic
-    }})
+    res.status(200).send({profile})
   } catch (error) {
     next(error)
   }
@@ -91,7 +87,6 @@ exports.getProfile = async (req, res, next) => {
 }
 
 exports.updateProfile = async (req, res, next) => {
-  console.log("controller")
   const {profilePic} = req.body
   const userId = req.userId
   if(!profilePic) return res.status(400).send({msg: "Bad Request"})
@@ -101,7 +96,6 @@ exports.updateProfile = async (req, res, next) => {
     res.status(200).send(updatedUser)
 
   } catch (error) {
-    console.log(error)
     next(error)
   }
 }
