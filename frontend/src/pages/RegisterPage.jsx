@@ -43,9 +43,6 @@ const RegisterPage = () => {
                 <span className="label-text font-medium">Full Name</span>
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="size-5 text-base-content/40" />
-                </div>
                 <input
                   type="text"
                   className={`input input-bordered w-full pl-10`}
@@ -53,6 +50,9 @@ const RegisterPage = () => {
                   value={formData.fullName}
                   onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                 />
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="size-5 text-base-content/40" />
+                </div>
               </div>
             </div>
 
@@ -61,15 +61,15 @@ const RegisterPage = () => {
                 <span className='label-text font-medium'>Email</span>
               </label>
               <div className='relative'>
-                <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
-                  <Mail className="size-5 text-base-content/40" />
-                </div>
                 <input 
                   type="email"
                   className={'input input-bordered w-full pl-10'}
                   placeholder='you@example.com'
                   value={formData.email}
                   onChange={(e) => setFormData({...formData, email: e.target.value})} />
+                <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
+                  <Mail className="size-5 text-base-content/40" />
+                </div>
               </div>
             </div>
 
@@ -78,15 +78,15 @@ const RegisterPage = () => {
                 <span className='label-text font-medium'>Password</span>
               </label>
               <div className='relative'>
-                <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
-                  <Lock className="size-5 text-base-content/40" />
-                </div>
                 <input 
                   type={showPassword ? "text" : "password"}
                   className={'input input-bordered w-full pl-10'}
                   placeholder='********'
                   value={formData.password}
                   onChange={(e) => setFormData({...formData, password: e.target.value})} />
+                <div className='absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none'>
+                  <Lock className="size-5 text-base-content/40" />
+                </div>
                   <button
                     type='button'
                     className='absolute inset-y-0 right-0 pr-3 flex items-center'
@@ -125,9 +125,10 @@ const RegisterPage = () => {
           </div>
         </div>
       </div>
+      
       {/* rightside */}
 
-      
+
     </div>
   )
 }
