@@ -7,9 +7,10 @@ import { useAuthStore } from "../store/useAuthStore";
 import { formatMessageTime } from "../lib/utils";
 
 const Chat = () => {
-  const { messages, getMessages, isMessagesLoading, selectedUser } = useChatStore();
+  const { messages, getMessages, isMessagesLoading, selectedUser, subscribeMessages, unsubscribeMessages } = useChatStore();
   const { authUser } = useAuthStore();
   const chatEndRef = useRef(null)
+
 
   const messagesByDate = messages.reduce((acc, msg) => {
     const messageDate = new Date(msg.createdAt).toLocaleDateString("en-GB")
@@ -24,10 +25,15 @@ const Chat = () => {
 
   useEffect(() => {
     getMessages(selectedUser._id);
-  }, [selectedUser._id, getMessages]);
+    subscribeMessages()
+
+    return () => unsubscribeMessages()
+  }, [selectedUser._id, getMessages, subscribeMessages, unsubscribeMessages]);
 
   useEffect(()=>{
-    chatEndRef.current?.scrollIntoView({behavior:"smooth"})
+    if(chatEndRef.current && messages){
+      chatEndRef.current?.scrollIntoView({behavior:"smooth"})
+    }
   },[messages])
 
   if (isMessagesLoading)
