@@ -2,6 +2,7 @@ const User = require("../models/auth-models")
 const Message = require("../models/message-model")
 const cloudinary = require("../lib/cloudinary")
 const { default: mongoose } = require("mongoose")
+const { getReceiverSocketId, io } = require("../lib/socket")
 
 exports.getUsersForSidebar = async (req, res, next) => {
     const loggedInUser = req.userId
@@ -51,6 +52,12 @@ exports.sendMessageByUserId = async (req, res, next) => {
             image: imageUrl
         })
         await newMessage.save()
+
+        const receiverSocketId = getReceiverSocketId(receiverId)
+        if(receiverSocketId) {
+            io.to(receiverSocketId).emit("newMessage", newMessage)
+        }
+
         res.status(201).send({message: newMessage})
     } catch (error) {
         console.log(error.msg)
