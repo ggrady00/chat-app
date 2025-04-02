@@ -30,6 +30,14 @@ require("dotenv").config({
 
 const PORT = process.env.PORT
 
+if(process.env.NODE_ENV == "production") {
+    app.use(express.static(`${__dirname}../../frontend/dist`))
+
+    app.get("*", (req, res) => {
+        res.sendFile(`${__dirname}../../frontend/dist/index.html`)
+    })
+}
+
 server.listen(PORT, () => {
     console.log(`Listening on PORT:${PORT}`)
     connectDB()
