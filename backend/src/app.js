@@ -5,6 +5,7 @@ const messageRouter = require("./routes/message-router")
 const { handleMongoErrors, handleCustomErrors } = require("./errors")
 const cookieParser = require("cookie-parser")
 const cors = require("cors")
+const path = require("path")
 
 const {app, server} = require("./lib/socket")
 
@@ -31,10 +32,10 @@ require("dotenv").config({
 const PORT = process.env.PORT
 
 if(process.env.NODE_ENV == "production") {
-    app.use(express.static(`${__dirname}../../frontend/dist`))
+    app.use(express.static(path.join(__dirname, "../frontend/dist")))
 
     app.get("*", (req, res) => {
-        res.sendFile(`${__dirname}../../frontend/dist/index.html`)
+        res.sendFile(path.join(__dirname, "../frontend", "dist", "index.html"))
     })
 }
 
